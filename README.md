@@ -9,10 +9,11 @@ https://github.com/user-attachments/assets/c77bcb20-35f0-4dd6-b9fd-799a8f2aeda7
 
 In this repository you can find:
 -Arduino IDE code to drive motors and execute given moves
--Cube solving Java program/code
+-Cube solving Java program/code (src folder)
 -Video explaining the Java code
 -3D printing/design photos
 -Block diagram of MRCS
 
  Built by myself and my friend Garry Zaugg.
+
 

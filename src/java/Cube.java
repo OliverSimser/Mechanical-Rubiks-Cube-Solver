@@ -11,6 +11,8 @@ public class Cube {
   public int[][] greenFace = new int[3][3];
   public int[][] yellowFace = new int[3][3];
 
+  public String solveInstructions = ""; //Instructions produced by solve(), kept so the GUI can display them
+
   public Cube(int [][] w, int [][] r, int [][] b, int [][] o, int [][] g, int [][] y) { //Construcotr for the cube class
     //Takes in the copies of the values for each face of the cube and assignes it to the arrays in the cube class
     copyFace(whiteFace, w);
@@ -20,8 +22,12 @@ public class Cube {
     copyFace(greenFace, g);
     copyFace(yellowFace, y);
     System.out.println(ShowCube()); //Prints current state of the cube
-    System.out.println(solve()); //Solves cube and prints instructions
+    solveInstructions = solve(); //Solves cube and stores the instructions
+    System.out.println(solveInstructions);
     System.out.println(ShowCube()); //Prints the solved cube
+  }
+
+  public Cube() { //Constructor for a cube that is only used to generate a shuffle, so it is not solved right away
   }
 
   //Method to copy values of an array to the cube array instance variables
@@ -347,6 +353,11 @@ public class Cube {
     solveString += PLL(); //Adds PLL instructions
 
     String optimizedSolveString = optimizedMoves(solveString); //Optimizes the moves
+    String previousSolveString = ""; //guarteens first while condition fails, so the full while condition will run at least once
+    while (!optimizedSolveString.equals(previousSolveString)) { //Repeats until nothing cancels out, since removing a group can make two same-face groups neighbours
+      previousSolveString = optimizedSolveString;
+      optimizedSolveString = optimizedMoves(previousSolveString);
+    }
     
     String MRCSString = ""; //String of instructions for the MRCS
     MRCSString += optimizedSolveString;
@@ -1315,15 +1326,25 @@ public class Cube {
     List<String> optimized = new ArrayList<>(); //New list for final optimized moves
     int i = 0;
     while (i < cleanedMoves.size()) { //Go through all elements of raw list
-      String currentFace = getFace(cleanedMoves.get(i)); //Gets letter of move, method below
-      List<String> group = new ArrayList<>(); //New list to store all consecutive moves of the same face
-      while (i < cleanedMoves.size() && getFace(cleanedMoves.get(i)).equals(currentFace)) { //Keeps collecting moves as long as they're on the same face as currentFace
+      String currentAxis = getAxis(cleanedMoves.get(i)); //Opposite faces commute, so the whole axis is collected at once
+      List<String> group = new ArrayList<>(); //New list to store all consecutive moves on the same axis
+      while (i < cleanedMoves.size() && getAxis(cleanedMoves.get(i)).equals(currentAxis)) { //Keeps collecting moves as long as they're on the same axis as currentAxis
         group.add(cleanedMoves.get(i));
         i++;
       }
-      int net = netRotation(group); //Method below that treates D as +1, D' as -1, etc, calculates the net rotation of the moves in the group, ex D D D, 3, becomes D'
-      if (net != 0) {
-        optimized.add(convertToMove(currentFace, net));
+      List<String> facesSeen = new ArrayList<>(); //Keeps the order the two faces of the axis first appeared in
+      for (String move : group) {
+        if (!facesSeen.contains(getFace(move))) facesSeen.add(getFace(move));
+      }
+      for (String face : facesSeen) {
+        List<String> sameFace = new ArrayList<>(); //Only the moves of this one face, pulled out of the axis group
+        for (String move : group) {
+          if (getFace(move).equals(face)) sameFace.add(move);
+        }
+        int net = netRotation(sameFace); //Method below that treates D as +1, D' as -1, etc, calculates the net rotation of the moves of that face, ex D D D, 3, becomes D'
+        if (net != 0) {
+          optimized.add(convertToMove(face, net));
+        }
       }
     }
       // else: all moves cancel out
@@ -1353,6 +1374,13 @@ public class Cube {
       }
   }
 
+  private static String getAxis(String move) { //Opposite faces never touch the same cubies, so they can be grouped together
+  String face = getFace(move);
+  if (face.equals("R") || face.equals("L")) return "RL";
+  if (face.equals("F") || face.equals("B")) return "FB";
+  return "UD";
+  }
+
   public String shuffle() { //Method to shuffle the cube
     String shuffle = "";
     Random rand = new Random();
@@ -1366,7 +1394,7 @@ public class Cube {
         yellowFace[i][j] = 5;
       }
     }
-    for (int i = 0; i < 20; i++) { // 20 random moves will shuffle the cube to its most mixed state
+    for (int i = 0; i < 20; i++) { // 20 random moves fully mixes the cube
       int randomNumber = rand.nextInt(18) + 1;
       switch (randomNumber) {
         case 1:

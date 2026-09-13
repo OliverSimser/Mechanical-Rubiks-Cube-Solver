@@ -21,9 +21,35 @@ public class SolverWindow extends JFrame {
         // Create a new button to solve the cube
         JButton solveButton = new JButton("Solve!");
         solveButton.setBackground(Color.LIGHT_GRAY);
-        solveButton.setBounds(310, 490, 123, 60);
+        solveButton.setBounds(310, 505, 123, 50);
         solveButton.setForeground(Color.BLACK);
         solveButton.setFont(new Font("Serif", Font.BOLD, 19));
+
+        // Create a new button to return to the welcome window
+        JButton backButton = new JButton("Back");
+        backButton.setBackground(Color.LIGHT_GRAY);
+        backButton.setBounds(177, 505, 123, 50);
+        backButton.setForeground(Color.BLACK);
+        backButton.setFont(new Font("Serif", Font.BOLD, 19));
+
+        // Create a new button to fill the cube in with a random scramble
+        JButton shuffleButton = new JButton("Shuffle");
+        shuffleButton.setBackground(Color.LIGHT_GRAY);
+        shuffleButton.setBounds(443, 505, 123, 50);
+        shuffleButton.setForeground(Color.BLACK);
+        shuffleButton.setFont(new Font("Serif", Font.BOLD, 19));
+
+        // Wrapping text area that shows the moves of the last generated scramble
+        final JTextArea scrambleLabel = new JTextArea("");
+        scrambleLabel.setFont(new Font("Serif", Font.PLAIN, 13));
+        scrambleLabel.setBounds(10, 462, 780, 42);
+        scrambleLabel.setForeground(Color.WHITE);
+        scrambleLabel.setBackground(Color.BLACK);
+        scrambleLabel.setLineWrap(true);
+        scrambleLabel.setWrapStyleWord(true);
+        scrambleLabel.setEditable(false);
+        scrambleLabel.setFocusable(false);
+        scrambleLabel.setBorder(null);
         
         panel1.setBackground(Color.BLACK); // Set the background color of the panel
         panel1.setLayout(null); // Disable the layout manager
@@ -43,10 +69,24 @@ public class SolverWindow extends JFrame {
         panel1.add(instructionsLabel);
         panel1.add(yellowLabel);
         panel1.add(solveButton);
+        panel1.add(backButton);
+        panel1.add(shuffleButton);
+        panel1.add(scrambleLabel);
+
+        backButton.addMouseListener(new MouseListener() { //When user clicks on the back button
+            public void mouseClicked(MouseEvent e) {
+                SolverWindow.this.dispose(); // Close this window, revealing the welcome window behind it
+            }
+            public void mousePressed(MouseEvent e) {}
+            public void mouseReleased(MouseEvent e) {}
+            public void mouseEntered(MouseEvent e) {}
+            public void mouseExited(MouseEvent e) {}
+        });
         
         solveButton.addMouseListener(new MouseListener() { //When user clicks on the solve button
             public void mouseClicked(MouseEvent e) {
                 final Cube cube1 = new Cube(ColorWindow.whiteFaceCopyable, ColorWindow.redFaceCopyable, ColorWindow.blueFaceCopyable, ColorWindow.orangeFaceCopyable, ColorWindow.greenFaceCopyable, ColorWindow.yellowFaceCopyable); //Create a new cube object with a copy of the colors on each face set by the user
+                showSolution(cube1.solveInstructions);
             }
             public void mousePressed(MouseEvent e) {}
             public void mouseReleased(MouseEvent e) {}
@@ -56,12 +96,12 @@ public class SolverWindow extends JFrame {
         
         final int DIMENSION = 3; //Max size of the arrays of the buttons for the cube
         //Create arrays for the buttons on the GUI
-        JButton[][] whiteButtons = new JButton[DIMENSION][DIMENSION];
-        JButton[][] redButtons = new JButton[DIMENSION][DIMENSION];
-        JButton[][] greenButtons = new JButton[DIMENSION][DIMENSION];
-        JButton[][] blueButtons = new JButton[DIMENSION][DIMENSION];
-        JButton[][] yellowButtons = new JButton[DIMENSION][DIMENSION];
-        JButton[][] orangeButtons = new JButton[DIMENSION][DIMENSION];
+        final JButton[][] whiteButtons = new JButton[DIMENSION][DIMENSION];
+        final JButton[][] redButtons = new JButton[DIMENSION][DIMENSION];
+        final JButton[][] greenButtons = new JButton[DIMENSION][DIMENSION];
+        final JButton[][] blueButtons = new JButton[DIMENSION][DIMENSION];
+        final JButton[][] yellowButtons = new JButton[DIMENSION][DIMENSION];
+        final JButton[][] orangeButtons = new JButton[DIMENSION][DIMENSION];
 
         // Create buttons, set properties, and add listeners
             for (int i = 0; i < DIMENSION; i++) {
@@ -109,7 +149,58 @@ public class SolverWindow extends JFrame {
             ColorWindow.yellowFaceCopyable[1][1] = 5;
             orangeButtons[1][1].setBackground(new Color(255,110,0)); //Sets a more specific orange color
             ColorWindow.orangeFaceCopyable[1][1] = 3;
+
+            shuffleButton.addMouseListener(new MouseListener() { //When user clicks on the shuffle button
+                public void mouseClicked(MouseEvent e) {
+                    Cube scrambledCube = new Cube(); //Cube used only to generate a scramble, so it is not solved
+                    String shuffleMoves = scrambledCube.shuffle(); //Applies 30 random moves to a solved cube
+                    //Copy the scrambled cube onto the GUI and into the arrays the solver reads from
+                    applyFace(whiteButtons, scrambledCube.whiteFace, ColorWindow.whiteFaceCopyable);
+                    applyFace(redButtons, scrambledCube.redFace, ColorWindow.redFaceCopyable);
+                    applyFace(blueButtons, scrambledCube.blueFace, ColorWindow.blueFaceCopyable);
+                    applyFace(orangeButtons, scrambledCube.orangeFace, ColorWindow.orangeFaceCopyable);
+                    applyFace(greenButtons, scrambledCube.greenFace, ColorWindow.greenFaceCopyable);
+                    applyFace(yellowButtons, scrambledCube.yellowFace, ColorWindow.yellowFaceCopyable);
+                    scrambleLabel.setText("Scramble from solved (red face towards you, white face up): " + shuffleMoves.replace("Shuffling moves: ", ""));
+                }
+                public void mousePressed(MouseEvent e) {}
+                public void mouseReleased(MouseEvent e) {}
+                public void mouseEntered(MouseEvent e) {}
+                public void mouseExited(MouseEvent e) {}
+            });
     }
+
+        // Method to show the solve instructions in a scrollable popup
+        private void showSolution(String instructions) {
+            JTextArea solutionArea = new JTextArea(instructions, 12, 55);
+            solutionArea.setLineWrap(true);
+            solutionArea.setWrapStyleWord(true);
+            solutionArea.setEditable(false);
+            solutionArea.setCaretPosition(0);
+            JOptionPane.showMessageDialog(this, new JScrollPane(solutionArea), "Solution", JOptionPane.INFORMATION_MESSAGE);
+        }
+
+        // Method to copy one scrambled face onto its buttons and into the array the solver reads from
+        private void applyFace(JButton[][] buttons, int[][] scrambledFace, int[][] copyable) {
+            for (int i = 0; i < buttons.length; i++) {
+                for (int j = 0; j < buttons[i].length; j++) {
+                    copyable[i][j] = scrambledFace[i][j];
+                    buttons[i][j].setBackground(colorOf(scrambledFace[i][j]));
+                }
+            }
+        }
+
+        // Method to turn a cube value into the color it represents
+        private Color colorOf(int value) {
+            switch (value) {
+                case 0: return Color.WHITE;
+                case 1: return Color.RED;
+                case 2: return new Color(30,135,255);
+                case 3: return new Color(255,110,0);
+                case 4: return Color.GREEN;
+                default: return Color.YELLOW;
+            }
+        }
 
         // Method to create the buttons
         private JButton createButton(String text, int x, int y) {
